@@ -32,7 +32,7 @@ def generate_alert(timestamp):
         "data":  {"srcip": random.choice(BAD_IPS if is_bad else GOOD_IPS)},
     }
 
-def generate_logs(count=1000, output_file="sample_logs/wazuh_alerts.json"):
+def generate_logs(count=10000, output_file="sample_logs/wazuh_alerts.json"):
     start = datetime.now() - timedelta(hours=24)
     with open(output_file, "w") as f:
         for i in range(count):
