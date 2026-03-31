@@ -1,7 +1,6 @@
 # SOC Home Lab — Log Analyzer & Threat Hunter
 
 Projekt edukacyjny do nauki cyberbezpieczeństwa, zbudowany na bazie Wazuh SIEM.
-Każdy etap to niezależny moduł — commituj regularnie i obserwuj swój postęp.
 
 ## Stack technologiczny
 
@@ -48,8 +47,8 @@ filtruje według poziomu ryzyka i generuje raport CSV.
 
 ```bash
 # Sklonuj repozytorium
-git clone https://github.com/TWOJ_USERNAME/soc-home-lab.git
-cd soc-home-lab
+git clone https://github.com/FiFulini/SOC-Home-Lab-Log-Analyzer-Threat-Hunter.git
+cd SOC-Home-Lab-Log-Analyzer-Threat-Hunter
 
 # Zainstaluj zależności
 pip install -r requirements.txt
