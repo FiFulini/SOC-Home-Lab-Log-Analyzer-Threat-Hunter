@@ -4,11 +4,11 @@ Projekt edukacyjny do nauki cyberbezpieczeństwa, zbudowany na bazie Wazuh SIEM.
 
 ## Stack technologiczny
 
-- **SIEM**: Wazuh (znajomy z pracy inżynierskiej)
+- **SIEM**: Wazuh v
 - **Język**: Python 3.10+
-- **Analiza**: pandas, scikit-learn
+- **Analiza**: pandas, scikit-learn, matplotlib
 - **Dashboard**: Streamlit (Etap 4)
-- **Sprzęt**: Raspberry Pi 4/5 lub dowolny Linux z 8GB RAM
+- **Sprzęt**: Raspberry Pi 4/5 8GB RAM (do zakupienia do Etap 2)
 
 ---
 
@@ -56,21 +56,6 @@ pip install -r requirements.txt
 # Uruchom analizator
 cd etap1_log_analyzer
 python main.py
-```
-
-### Przykładowy wynik
-
-```
-Wczytano 1250 alertów z pliku...
-Znaleziono 47 alertów wysokiego ryzyka (poziom >= 7)
-Zapisano raport do: raport_2024-01-15.csv
-
-Top 5 reguł:
-  Rule 5710 | Attempt to login using a non-existent user  | 12x
-  Rule 5760 | Multiple authentication failures            |  8x
-  Rule 1002 | Unknown problem somewhere in the system     |  6x
-  Rule 5503 | User missed the password more than one time |  5x
-  Rule 31101 | Web server 400 error code                  |  4x
 ```
 
 ### Format logów Wazuh (JSON)
