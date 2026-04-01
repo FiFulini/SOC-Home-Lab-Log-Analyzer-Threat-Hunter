@@ -96,6 +96,21 @@ Każda linia pliku to jeden alert w formacie:
 }
 ```
 
+# Przykładowy wykres SOC Dashboard (Streamlit)
+
+![SOC Dashboard](etap1_log_analyzer/soc_dashboard.png)
+
+### Opis wykresu
+
+**Lewy górny — timeline alertów.** Każda kropka to jeden alert, kolor i rozmiar to severity. Szczyty skupień na osi czasu to właśnie Twoje zaszyfrowane ataki brute-force — widać je gołym okiem bez czytania logów. Tak właśnie pracuje analityk SOC pierwszej linii: patrzy na timeline i szuka anomalii wizualnie.
+
+**Prawy górny — heatmapa godzinowa.** Pokazuje o której godzinie jest najwięcej alertów wysokiego ryzyka. W prawdziwym środowisku produkcyjnym nocne szczyty (np. 2:00-4:00) są klasycznym sygnałem ataku — bo atakujący zakłada że wtedy nikt nie patrzy. Twój generator zaszywa ataki losowo, więc zobaczysz rozkład przez całą dobę.
+
+**Lewy dolny — top 10 reguł.** Pokazuje które reguły Wazuha wyzwalają się najczęściej. Reguła `5710` (nieistniejący użytkownik SSH) dominuje bo generator produkuje dużo prób z fałszywymi loginami. W praktyce jeśli jakaś reguła jest na szczycie przez tygodnie — albo masz realny problem, albo reguła wymaga tuningu (zbyt czuła).
+
+**Prawy dolny — top IP.** Kandydaci do zablokowania przez `iptables`. Czerwone to IP z listy znanych złych aktorów którą zakodowałem w generatorze (`91.108.4.200` to rzeczywiście znany węzeł Tor/botnet używany w przykładach edukacyjnych). To połączenie z Etapem 5 — tam zamiast tylko wyświetlać IP, skrypt będzie je automatycznie blokował.
+
+
 ### Rozszerzenia do samodzielnego zrobienia
 
 - [ ] Dodaj filtrowanie po zakresie dat (`--from`, `--to`)

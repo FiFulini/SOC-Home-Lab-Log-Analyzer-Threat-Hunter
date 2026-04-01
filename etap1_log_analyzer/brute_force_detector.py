@@ -184,6 +184,7 @@ class BruteForceDetector:
 
             rate     = len(evs) / max((evs[-1].timestamp - evs[0].timestamp).total_seconds(), 1)
             severity = "KRYTYCZNY" if (len(evs) >= 20 or rate > 2) else "WYSOKI"
+            # Sprawdź, czy po ataku nastąpiło udane logowanie (potencjalne przejęcie konta)
             success  = self._success_followed(events, ip, agent, evs[-1].timestamp)
 
             result.append(BruteForceAlert(
