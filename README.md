@@ -1,168 +1,151 @@
-# SOC Home Lab — Log Analyzer & Threat Hunter
+# SOC Home Lab
 
-Projekt edukacyjny do nauki cyberbezpieczeństwa, zbudowany na bazie Wazuh SIEM.
+Projekt edukacyjny do nauki cyberbezpieczeństwa zbudowany na bazie Wazuh SIEM.
+Każdy etap to niezależny moduł — razem tworzą mini-platformę SOC-analityczną.
+
+Projekt powstał jako ćwiczenie praktyczne po pracy inżynierskiej z optymalizacji SIEM (Wazuh + Security Onion). Celem jest przełożenie umiejętności z analizy danych na realne narzędzia bezpieczeństwa.
+
+---
+
+## Etap 1 — Analizator logów ✓
+
+Parser i analizator logów Wazuh w Pythonie. Wykrywa ataki brute-force trzema algorytmami korelacji zdarzeń i generuje dashboard wizualny.
+
+![SOC Dashboard](soc_dashboard.png)
+
+### Uruchomienie
+
+```bash
+pip install -r requirements.txt
+
+# Wygeneruj testowe logi
+python soc.py generate
+
+# Analiza ogólna
+python soc.py analyze
+
+# Wykryj ataki brute-force
+python soc.py brute
+
+# Dashboard PNG
+python soc.py chart
+
+# Wszystko naraz
+python soc.py full --csv
+```
+
+Pełna lista komend w pliku [KOMENDY.txt](KOMENDY.txt).
+Szczegółowy opis każdego pliku w [OPIS_PLIKOW.md](OPIS_PLIKOW.md).
+
+### Przykładowy wynik
+
+```
+────────────────────────────────────────────────────────────────────────
+ ANALIZA LOGÓW  |  plik: sample_logs/wazuh_alerts.json
+ Wczytano: 1000 alertów  |  poziom ≥7: 214
+────────────────────────────────────────────────────────────────────────
+
+ Top reguły (poziom ≥7):
+
+  ███████████████   87x  [5710] sshd: Attempt to login non-existent user
+  ██████████   53x  [5760] sshd: Multiple authentication failures
+  ████████    42x  [31151] Web server directory traversal attempt
+
+ Top atakujące IP:
+
+  ██████████████   116x  91.108.4.200
+  ████████    49x  198.51.100.22
+
+[!!!] KRYTYCZNY | 2024-06-03 02:14 | Brute-force SSH
+      agent=linux-server-01  ip=91.108.4.200  prób=34  ← UDANE LOGOWANIE!
+```
+
+### Pliki
+
+```
+etap1_log_analyzer/
+├── soc.py                     ← główny punkt wejścia CLI
+├── generate_sample_logs.py    ← generator realistycznych logów testowych
+├── brute_force_detector.py    ← detekcja brute-force, spraying, distributed
+├── visualizer.py              ← dashboard PNG (4 wykresy matplotlib)
+├── parser.py                  ← wczytywanie i parsowanie logów JSON
+├── rules.py                   ← filtrowanie alertów po poziomie i grupie
+├── reporter.py                ← eksport wyników do CSV
+├── main.py                    ← standalone analiza bez CLI
+└── sample_logs/               ← dane testowe (nie w git)
+```
+
+### Algorytmy detekcji
+
+Trzy algorytmy oparte na **sliding window** — tym samym mechanizmie który stosuje Splunk, Elastic SIEM i reguły Sigma:
+
+**Brute-force** — okno 60s, ≥5 nieudanych prób z jednego IP na jeden host. Automatycznie wykrywa udane logowanie po ataku i eskaluje do KRYTYCZNY.
+
+**Password spraying** — okno 300s, jeden IP próbuje ≥3 różnych użytkowników. Wykrywa powolne ataki omijające blokady kont których klasyczny licznik nie złapie.
+
+**Distributed attack** — okno 300s, ≥3 różne IP atakują tego samego użytkownika. Wykrywa skoordynowane ataki botnetowe gdzie każde IP wygląda niewinnie z osobna.
+
+### Dashboard
+
+Cztery wykresy w jednym pliku PNG:
+
+| Wykres | Co pokazuje |
+|---|---|
+| Timeline alertów | Każdy alert jako kropka na osi czasu — skupienia = ataki |
+| Heatmapa godzinowa | O której godzinie jest szczyt ataków |
+| Top 10 reguł | Które reguły Wazuha wyzwalają się najczęściej |
+| Top atakujące IP | Kandydaci do blokady przez iptables |
+
+### Powiązania MITRE ATT&CK
+
+| Scenariusz | Technika |
+|---|---|
+| Brute-force SSH | T1110.001 — Password Guessing |
+| Password spraying | T1110.003 — Password Spraying |
+| Web scan / SQLi | T1595 — Active Scanning |
+| Privilege escalation sudo | T1548.003 — Sudo Caching |
+| File integrity violation | T1565 — Data Manipulation |
+
+---
+
+## Kolejne etapy
+
+- [ ] **Etap 2** — Integracja z Wazuh API (live feed zamiast pliku)
+- [ ] **Etap 3** — Threat Intelligence (AbuseIPDB, AlienVault OTX)
+- [ ] **Etap 4** — Dashboard webowy (Streamlit)
+- [ ] **Etap 5** — Automatyczna odpowiedź na incydenty (SOAR-lite)
+- [ ] **Etap 6** — ML Anomaly Detection (Isolation Forest)
+
+Etap 2 wymaga Raspberry Pi lub innego serwera z Wazuh Managerem.
+Przejście z pliku na API to jedna zmiana: `load_wazuh_logs()` → `fetch_from_wazuh_api()`.
+
+---
 
 ## Stack technologiczny
 
-- **SIEM**: Wazuh v
-- **Język**: Python 3.10+
-- **Analiza**: pandas, scikit-learn, matplotlib
-- **Dashboard**: Streamlit (Etap 4)
-- **Sprzęt**: Raspberry Pi 4/5 8GB RAM (do zakupienia do Etap 2)
+| Warstwa | Technologia |
+|---|---|
+| SIEM | Wazuh |
+| Język | Python 3.10+ |
+| Analiza | pandas, matplotlib |
+| Detekcja | algorytmy sliding window (własna implementacja) |
+| Sprzęt (Etap 2+) | Raspberry Pi 5 8GB + Ubuntu 22.04 |
 
 ---
 
-## Struktura projektu
+## Wymagania
 
 ```
-soc-home-lab/
-├── README.md
-├── requirements.txt
-│
-├── etap1_log_analyzer/        ← jesteś tutaj
-│   ├── parser.py              # wczytuje i parsuje logi Wazuh JSON
-│   ├── rules.py               # reguły filtrowania alertów
-│   ├── reporter.py            # generuje raport CSV
-│   ├── main.py                # punkt wejścia
-│   └── sample_logs/
-│       └── wazuh_alerts.json  # przykładowe logi do testów
-│
-├── etap2_wazuh_api/           ← wkrótce
-├── etap3_threat_intel/        ← wkrótce
-├── etap4_dashboard/           ← wkrótce
-├── etap5_soar_lite/           ← wkrótce
-└── etap6_ml_anomaly/          ← wkrótce
+pandas>=2.0.0
+matplotlib>=3.8.0
+python-dateutil>=2.8.2
+requests>=2.31.0
 ```
-
----
-
-## Etap 1 — Analizator logów
-
-### Co robi
-
-Skrypt wczytuje logi Wazuh w formacie JSON (jeden alert na linię),
-filtruje według poziomu ryzyka i generuje raport CSV.
-
-### Jak uruchomić
 
 ```bash
-# Sklonuj repozytorium
-git clone https://github.com/FiFulini/SOC-Home-Lab-Log-Analyzer-Threat-Hunter.git
-cd SOC-Home-Lab-Log-Analyzer-Threat-Hunter
-
-# Zainstaluj zależności
 pip install -r requirements.txt
-
-# Uruchom analizator
-cd etap1_log_analyzer
-python main.py
 ```
 
-### Format logów Wazuh (JSON)
+Python 3.10 lub nowszy. Brak zewnętrznych zależności poza standardowymi bibliotekami
+naukowymi — działa lokalnie, na VM i na RPi bez dodatkowej konfiguracji.
 
-Każda linia pliku to jeden alert w formacie:
-
-```json
-{
-  "timestamp": "2024-01-15T10:23:45.123+0000",
-  "rule": {
-    "level": 10,
-    "id": "5710",
-    "description": "Attempt to login using a non-existent user",
-    "groups": ["authentication_failed", "syslog"]
-  },
-  "agent": {
-    "id": "001",
-    "name": "linux-server-01"
-  },
-  "data": {
-    "srcip": "192.168.1.105"
-  }
-}
-```
-
-# Przykładowy wykres SOC Dashboard (Streamlit)
-
-![SOC Dashboard](etap1_log_analyzer/soc_dashboard.png)
-
-### Opis wykresu
-
-**Lewy górny — timeline alertów.** Każda kropka to jeden alert, kolor i rozmiar to severity. Szczyty skupień na osi czasu to właśnie Twoje zaszyfrowane ataki brute-force — widać je gołym okiem bez czytania logów. Tak właśnie pracuje analityk SOC pierwszej linii: patrzy na timeline i szuka anomalii wizualnie.
-
-**Prawy górny — heatmapa godzinowa.** Pokazuje o której godzinie jest najwięcej alertów wysokiego ryzyka. W prawdziwym środowisku produkcyjnym nocne szczyty (np. 2:00-4:00) są klasycznym sygnałem ataku — bo atakujący zakłada że wtedy nikt nie patrzy. Twój generator zaszywa ataki losowo, więc zobaczysz rozkład przez całą dobę.
-
-**Lewy dolny — top 10 reguł.** Pokazuje które reguły Wazuha wyzwalają się najczęściej. Reguła `5710` (nieistniejący użytkownik SSH) dominuje bo generator produkuje dużo prób z fałszywymi loginami. W praktyce jeśli jakaś reguła jest na szczycie przez tygodnie — albo masz realny problem, albo reguła wymaga tuningu (zbyt czuła).
-
-**Prawy dolny — top IP.** Kandydaci do zablokowania przez `iptables`. Czerwone to IP z listy znanych złych aktorów którą zakodowałem w generatorze (`91.108.4.200` to rzeczywiście znany węzeł Tor/botnet używany w przykładach edukacyjnych). To połączenie z Etapem 5 — tam zamiast tylko wyświetlać IP, skrypt będzie je automatycznie blokował.
-
-
-### Rozszerzenia do samodzielnego zrobienia
-
-- [ ] Dodaj filtrowanie po zakresie dat (`--from`, `--to`)
-- [ ] Dodaj filtrowanie po nazwie agenta (`--agent`)
-- [ ] Wykryj brute-force: >5 nieudanych logowań z jednego IP w 60 sekund
-- [ ] Wygeneruj wykres słupkowy (matplotlib) z top 10 reguł
-- [ ] Dodaj argumenty CLI z biblioteką `argparse`
-
----
-
-## Wymagania sprzętowe (home lab)
-
-### Opcja A — Raspberry Pi 4/5 (rekomendowane)
-
-```
-[Twój PC]                    [Raspberry Pi 4/5 8GB]
-Wazuh Agent          →       Wazuh Manager
-Python / VS Code             Elasticsearch + Kibana
-                             │
-                             └── [Dysk USB SSD 500GB]
-                                 /mnt/wazuh-logs
-```
-
-**Zalety**: cichy, tani w eksploatacji, działa 24/7, nie obciąża PC.
-
-### Opcja B — Maszyna wirtualna (na start / bez kosztu)
-
-```
-[Twój PC]
-├── Host OS (Windows/Linux)
-│   └── Python, VS Code, Wazuh Agent
-└── VM (VirtualBox / VMware)
-    └── Ubuntu 22.04 + Wazuh Manager + Elasticsearch
-```
-
-**Zalety**: zero kosztu, snapshoty, łatwy reset.
-**Wady**: obciąża główny PC, logi giną przy usunięciu VM.
-
-### Minimalne wymagania dla Wazuh Manager
-
-| Komponent | Minimum | Rekomendowane |
-|-----------|---------|---------------|
-| RAM | 4 GB | 8 GB |
-| CPU | 2 rdzenie | 4 rdzenie |
-| Dysk | 50 GB | 250 GB SSD |
-| System | Ubuntu 20.04+ | Ubuntu 22.04 LTS |
-
----
-
-## Przydatne linki
-
-- [Dokumentacja Wazuh](https://documentation.wazuh.com)
-- [Wazuh ruleset — lista reguł](https://github.com/wazuh/wazuh-ruleset)
-- [AbuseIPDB API](https://www.abuseipdb.com/api) — darmowy do 1000 req/dzień
-- [AlienVault OTX](https://otx.alienvault.com) — darmowe threat feeds
-
----
-
-## Postęp
-
-- [x] Etap 1 — Analizator logów Python
-- [ ] Etap 2 — Integracja Wazuh API
-- [ ] Etap 3 — Threat Intelligence Feed
-- [ ] Etap 4 — Dashboard Streamlit
-- [ ] Etap 5 — Automatyczna odpowiedź (SOAR-lite)
-- [ ] Etap 6 — ML Anomaly Detection
-
----
-
-*Projekt edukacyjny — cybersecurity home lab*
