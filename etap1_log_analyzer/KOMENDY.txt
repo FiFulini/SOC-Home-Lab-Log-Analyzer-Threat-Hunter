@@ -143,7 +143,7 @@
 
   # Pierwsze uruchomienie (raz)
   git init
-  git remote add origin https://github.com/TWOJ_USERNAME/soc-home-lab.git
+  git remote add origin https://github.com/FiFulini/SOC-Home-Lab-Log-Analyzer-Threat-Hunter.git
 
   # Dodaj plik .gitignore żeby nie wrzucać danych i venv
   echo "sample_logs/\n*.csv\n__pycache__/\nvenv/\n*.png" > .gitignore
