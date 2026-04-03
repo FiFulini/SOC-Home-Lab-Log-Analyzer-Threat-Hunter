@@ -149,3 +149,7 @@ pip install -r requirements.txt
 Python 3.10 lub nowszy. Brak zewnętrznych zależności poza standardowymi bibliotekami
 naukowymi — działa lokalnie, na VM i na RPi bez dodatkowej konfiguracji.
 
+## Etap 2 
+
+Trzeba dodać automatyczne usówanie bazy danych po jakimś czasie żeby nie zaśmiecać dysku
+Także filtracja alertów 0 level
