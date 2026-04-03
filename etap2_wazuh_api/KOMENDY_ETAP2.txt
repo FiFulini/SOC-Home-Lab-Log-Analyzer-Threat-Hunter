@@ -1,0 +1,186 @@
+╔══════════════════════════════════════════════════════════════════╗
+║              SOC HOME LAB — ETAP 2 — LISTA KOMEND               ║
+╚══════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ INSTALACJA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Etap 2 nie wymaga żadnych nowych bibliotek poza standardową
+  # biblioteką Pythona (urllib, sqlite3, json) — pip nie jest potrzebny
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MOCK SERWER — URUCHOM NAJPIERW (Terminal 1)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Uruchom mock serwer (musi działać w osobnym terminalu)
+  python mock_wazuh_server.py
+
+  # Na innym porcie
+  python mock_wazuh_server.py --port 55001
+
+  # Dostępny z innych urządzeń w sieci (np. z drugiego komputera)
+  python mock_wazuh_server.py --host 0.0.0.0
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ZBIERANIE ALERTÓW — POLL (Terminal 2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Domyślnie: wszystkie alerty, co 5 sekund
+  python soc2.py poll
+
+  # Tylko alerty wysokiego ryzyka (≥7), co 10 sekund
+  python soc2.py poll --level 7 --interval 10
+
+  # Tylko alerty krytyczne (≥10), co 30 sekund
+  python soc2.py poll --level 10 --interval 30
+
+  # Szybkie testowanie — co 2 sekundy
+  python soc2.py poll --interval 2
+
+  # Inny plik bazy danych
+  python soc2.py poll --db moja_baza.db
+
+  # Większy batch (więcej alertów na jedno zapytanie)
+  python soc2.py poll --batch 200
+
+  # Zatrzymanie: Ctrl+C (wyświetli podsumowanie sesji)
+
+  # --- NA PRAWDZIWYM WAZUHU (RPi) — tylko ta jedna zmiana: ---
+  python soc2.py poll --host 192.168.1.50
+  python soc2.py poll --host 192.168.1.50 --password TWOJE_HASLO
+  python soc2.py poll --host 192.168.1.50 --user admin --password HASLO --level 7
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ STATUS BAZY I API
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Pełny status: baza lokalna + sprawdzenie API
+  python soc2.py status
+
+  # Tylko status bazy (bez łączenia z API)
+  python soc2.py status --no-api
+
+  # Status innej bazy
+  python soc2.py status --db moja_baza.db --no-api
+
+  # Status prawdziwego Wazuha na RPi
+  python soc2.py status --host 192.168.1.50
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRZESZUKIWANIE BAZY — QUERY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Wszystkie alerty (tabela)
+  python soc2.py query
+
+  # Tylko alerty wysokiego ryzyka
+  python soc2.py query --level 7
+
+  # Tylko alerty krytyczne
+  python soc2.py query --level 10
+
+  # Konkretny zakres dat
+  python soc2.py query --from 2024-06-01 --to 2024-06-03
+
+  # Konkretna godzina
+  python soc2.py query --from "2024-06-01 08:00" --to "2024-06-01 20:00"
+
+  # Filtruj po konkretnym agencie (hoście)
+  python soc2.py query --agent linux-server-01
+
+  # Filtruj po atakującym IP
+  python soc2.py query --ip 91.108.4.200
+
+  # Filtruj po IP + podsumowanie zamiast tabeli
+  python soc2.py query --ip 91.108.4.200 --format summary
+
+  # Wynik w formacie JSON (do dalszego przetwarzania)
+  python soc2.py query --level 7 --format json
+
+  # Więcej wyników (domyślnie: 50)
+  python soc2.py query --level 5 --limit 200
+
+  # Kombinacja filtrów
+  python soc2.py query --level 7 --agent web-server-02 --format summary
+
+  # Wszystkie opcje naraz
+  python soc2.py query --level 7 --from 2024-06-01 --to 2024-06-07 \
+    --agent linux-server-01 --limit 100 --format table
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ LISTA AGENTÓW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Lista wszystkich agentów (wymaga działającego mock serwera lub RPi)
+  python soc2.py agents
+
+  # Agenci prawdziwego Wazuha
+  python soc2.py agents --host 192.168.1.50
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ POŁĄCZENIE ETAPU 1 I 2 — ANALIZA ZEBRANYCH DANYCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Po zebraniu alertów przez poller możesz przeanalizować bazę
+  # narzędziami z Etapu 1 — eksportuj do JSON i podaj do soc.py:
+
+  python soc2.py query --level 0 --format json --limit 9999 > zebrane_alerty.json
+  cd ../etap1_log_analyzer
+  python soc.py analyze --input ../etap2_wazuh_api/zebrane_alerty.json
+  python soc.py brute   --input ../etap2_wazuh_api/zebrane_alerty.json
+  python soc.py chart   --input ../etap2_wazuh_api/zebrane_alerty.json
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ TYPOWY WORKFLOW SESJI TESTOWEJ (bez RPi)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Terminal 1:
+  python mock_wazuh_server.py
+
+  # Terminal 2 — zbieraj przez kilka minut:
+  python soc2.py poll --level 5 --interval 3
+
+  # Po zatrzymaniu (Ctrl+C) sprawdź wyniki:
+  python soc2.py status --no-api
+  python soc2.py query --level 10
+  python soc2.py query --format summary --level 7
+  python soc2.py query --ip 91.108.4.200
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRZEJŚCIE NA PRAWDZIWY WAZUH (gdy kupisz RPi)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Krok 1: Znajdź IP swojego RPi
+  # (na RPi wpisz: hostname -I)
+
+  # Krok 2: Zmień tylko --host — reszta kodu bez zmian
+  python soc2.py poll --host 192.168.1.50 --password TWOJE_HASLO
+
+  # Krok 3: Sprawdź czy widzi agentów
+  python soc2.py agents --host 192.168.1.50
+
+  # Domyślne dane logowania Wazuh po świeżej instalacji:
+  # user: wazuh  password: wazuh  (zmień natychmiast po instalacji!)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Dodaj *.db do .gitignore — bazy nie commitujemy (dane, nie kod)
+  echo "*.db" >> .gitignore
+  echo "alerts.db" >> .gitignore
+
+  git add .
+  git commit -m "feat: etap2 - Wazuh API client, SQLite store, poller"
+  git push
+
