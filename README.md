@@ -24,7 +24,7 @@ Parser i analizator logów Wazuh w Pythonie. Wykrywa ataki brute-force trzema
 algorytmami korelacji zdarzeń i generuje dashboard wizualny. Działa w całości
 lokalnie — nie potrzeba żadnego serwera.
 
-![SOC Dashboard](soc_dashboard.png)
+![SOC Dashboard](etap1_log_analyzer/soc_dashboard.png)
 
 ### Wymagania
 
@@ -55,8 +55,8 @@ python soc.py chart
 python soc.py full --csv
 ```
 
-Pełna lista komend: [KOMENDY.txt](KOMENDY.txt)
-Opis każdego pliku: [OPIS_PLIKOW.md](OPIS_PLIKOW.md)
+Pełna lista komend: [KOMENDY.txt](etap1_log_analyzer/KOMENDY.txt)
+Opis każdego pliku: [OPIS_PLIKOW.md](etap1_log_analyzer/OPIS_PLIKOW.md)
 
 ### Przykładowy wynik
 
