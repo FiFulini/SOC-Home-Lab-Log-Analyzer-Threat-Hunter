@@ -24,7 +24,7 @@ Parser i analizator logów Wazuh w Pythonie. Wykrywa ataki brute-force trzema
 algorytmami korelacji zdarzeń i generuje dashboard wizualny. Działa w całości
 lokalnie — nie potrzeba żadnego serwera.
 
-![SOC Dashboard](etap1_log_analyzer/soc_dashboard.png)
+![SOC Dashboard](soc_dashboard.png)
 
 ### Wymagania
 
@@ -55,8 +55,8 @@ python soc.py chart
 python soc.py full --csv
 ```
 
-Pełna lista komend: [KOMENDY.txt](etap1_log_analyzer/KOMENDY.txt)
-Opis każdego pliku: [OPIS_PLIKOW.md](etap1_log_analyzer/OPIS_PLIKOW.md)
+Pełna lista komend: [KOMENDY.txt](KOMENDY.txt)
+Opis każdego pliku: [OPIS_PLIKOW.md](OPIS_PLIKOW.md)
 
 ### Przykładowy wynik
 
@@ -274,4 +274,61 @@ requests>=2.31.0        # przygotowane pod Etap 3
 ```bash
 pip install -r requirements.txt
 ```
+
+
+---
+
+## Viewer — interaktywny panel filtrów
+
+Dwa sposoby przeglądania dużych zbiorów alertów z panelem filtrów w przeglądarce.
+Oba obsługują Etap 1 (pliki JSON) i Etap 2 (baza SQLite).
+
+### `viewer_html.py` — zero zależności (zalecane)
+
+Generuje jeden plik `.html` który otwierasz w przeglądarce. Wszystkie dane
+i filtry działają w JavaScript — nie potrzeba serwera, działa offline.
+
+```bash
+# Z pliku JSON (Etap 1)
+python viewer_html.py --input etap1_log_analyzer/sample_logs/wazuh_alerts.json --open
+
+# Z bazy SQLite (Etap 2)
+python viewer_html.py --db etap2_wazuh_api/alerts.db --open
+
+# Zapisz raport HTML do przekazania dalej
+python viewer_html.py --db alerts.db --output raport_tygodniowy.html
+```
+
+Co masz w panelu:
+
+| Funkcja | Opis |
+|---|---|
+| Suwak poziomu (1–15) | Filtruj po severity Wazuha |
+| Zakres dat | Od / Do z date pickerem |
+| IP atakującego | Multiselect — Ctrl żeby zaznaczyć wiele |
+| Agent / host | Multiselect po nazwie hosta |
+| ID reguły | Multiselect po numerze reguły Wazuha |
+| Szukaj w opisie | Filtr tekstowy (brute, injection, sudo...) |
+| Paginacja | 20 / 50 / 100 / 500 alertów na stronę |
+| Sortowanie | Kliknij nagłówek kolumny — ↕ zmienia kierunek |
+| Eksport CSV | Pobiera tylko przefiltrowane wiersze |
+
+Paginacja rozwiązuje problem wolnego ładowania przy dużych zbiorach — przeglądarka
+renderuje maksymalnie 500 wierszy naraz zamiast 11 000.
+
+### `viewer.py` — Streamlit (zalążek Etapu 4)
+
+Wersja z auto-odświeżaniem co 15 sekund — przydatna gdy poller zbiera alerty
+na żywo i chcesz widzieć nowe zdarzenia bez ręcznego odświeżania.
+
+```bash
+pip install streamlit pandas
+streamlit run viewer.py
+# → otwiera http://localhost:8501 automatycznie
+```
+
+Dodatkowe funkcje względem wersji HTML: zakładka Statystyki z wykresami
+interaktywnymi (top reguły, top IP, rozkład poziomów, top agenci), zakładka
+Timeline z liczbą alertów per godzina i aktywność wg godziny doby,
+auto-odświeżanie bazy SQLite podczas działającego pollera.
 
