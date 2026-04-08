@@ -182,7 +182,7 @@ python soc2.py query --agent linux-server-01
 python soc2.py agents
 ```
 
-Pełna lista komend: [KOMENDY_ETAP2.txt](KOMENDY_ETAP2.txt)
+Pełna lista komend: [KOMENDY_ETAP2.txt](etap2_wazuh_api/KOMENDY_ETAP2.txt)
 
 ### Połączenie Etapu 1 i 2
 
