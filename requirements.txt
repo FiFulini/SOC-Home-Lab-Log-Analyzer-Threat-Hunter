@@ -10,7 +10,7 @@ requests>=2.31.0
 # aiohttp>=3.9.0
  
 # ── Etap 4 — Dashboard ───────────────────────
-# streamlit>=1.30.0
+streamlit>=1.30.0
  
 # ── Etap 6 — ML Anomaly Detection ────────────
 # scikit-learn>=1.4.0
