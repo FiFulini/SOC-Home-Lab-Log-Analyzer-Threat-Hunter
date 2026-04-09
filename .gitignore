@@ -1,7 +1,7 @@
 ## Data base files
 *.db
 alerts.db
-viewer.py
+
 
 ## Paths
 */tmp
