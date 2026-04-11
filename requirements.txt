@@ -1,16 +1,17 @@
-# Etap 1 - Analizator logów
+# ── Etap 1 — Analizator logów ─────────────────
 pandas>=2.0.0
 python-dateutil>=2.8.2
-
-# Etap 2 - Integracja z Wazuh API (przyszłość)
+matplotlib>=3.8.0
+ 
+# ── Etap 2 — Integracja z Wazuh API ──────────
 requests>=2.31.0
-
-# Etap 3 - Threat Intelligence (przyszłość)
+ 
+# ── Etap 3 — Threat Intelligence ─────────────
 # aiohttp>=3.9.0
-
-# Etap 4 - Dashboard (przyszłość)
-# streamlit>=1.30.0
-
-# Etap 6 - ML (przyszłość)
+ 
+# ── Etap 4 — Dashboard ───────────────────────
+streamlit>=1.30.0
+ 
+# ── Etap 6 — ML Anomaly Detection ────────────
 # scikit-learn>=1.4.0
 # numpy>=1.26.0

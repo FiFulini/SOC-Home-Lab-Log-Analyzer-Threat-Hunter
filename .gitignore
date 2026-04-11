@@ -1,0 +1,8 @@
+## Data base files
+*.db
+alerts.db
+
+
+## Paths
+*/tmp
+# /sample_logs

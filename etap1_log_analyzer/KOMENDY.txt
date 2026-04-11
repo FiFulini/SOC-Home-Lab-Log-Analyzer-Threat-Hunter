@@ -1,0 +1,174 @@
+╔══════════════════════════════════════════════════════════════════╗
+║              SOC HOME LAB — ETAP 1 — LISTA KOMEND               ║
+╚══════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ INSTALACJA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  pip install -r requirements.txt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GENEROWANIE LOGÓW TESTOWYCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Domyślnie: 1000 alertów, ostatnie 7 dni
+  python soc.py generate
+
+  # Ostatnie 48 godzin
+  python soc.py generate --hours 48
+
+  # Konkretny tydzień
+  python soc.py generate --from 2024-06-01 --to 2024-06-07
+
+  # Konkretny dzień, tylko godziny dzienne
+  python soc.py generate --from "2024-06-01 08:00" --to "2024-06-01 20:00"
+
+  # Więcej alertów, inny plik wyjściowy
+  python soc.py generate --count 5000 --output sample_logs/duzy.json
+
+  # Bezpośrednio przez generate_sample_logs.py (bez CLI)
+  python generate_sample_logs.py
+  python generate_sample_logs.py --hours 168 --count 2000 --seed 99
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ANALIZA LOGÓW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Standardowa analiza (domyślnie poziom ≥7, top 10 reguł)
+  python soc.py analyze
+
+  # Tylko alerty krytyczne (poziom ≥10)
+  python soc.py analyze --level 10
+
+  # Ostatnie 24 godziny
+  python soc.py analyze --hours 24
+
+  # Konkretny zakres dat
+  python soc.py analyze --from 2024-06-01 --to 2024-06-03
+
+  # Top 5 reguł zamiast 10
+  python soc.py analyze --top 5
+
+  # Z eksportem do CSV
+  python soc.py analyze --csv
+
+  # Wszystkie opcje naraz
+  python soc.py analyze --level 10 --hours 24 --top 5 --csv
+
+  # Inny plik wejściowy
+  python soc.py analyze --input sample_logs/duzy.json --level 7 --csv
+
+  # Bezpośrednio przez main.py (bez CLI)
+  python main.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ DETEKCJA BRUTE-FORCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Standardowa detekcja (okno 60s, min. 5 prób)
+  python soc.py brute
+
+  # Zaostrzony próg — mniej fałszywych alarmów
+  python soc.py brute --min-fail 10 --window 30
+
+  # Łagodny próg — więcej wykryć (przydatne na małych środowiskach)
+  python soc.py brute --min-fail 3 --window 120
+
+  # Zmień próg dla password spraying
+  python soc.py brute --min-users 5
+
+  # Z eksportem do CSV
+  python soc.py brute --csv
+
+  # Wszystkie opcje naraz
+  python soc.py brute --min-fail 3 --window 120 --min-users 4 --csv
+
+  # Inny plik wejściowy
+  python soc.py brute --input sample_logs/duzy.json --csv
+
+  # Bezpośrednio przez brute_force_detector.py (bez CLI)
+  python brute_force_detector.py
+  python brute_force_detector.py --window 30 --min-fail 3 --csv
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ DASHBOARD PNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Standardowy dashboard ze wszystkich logów
+  python soc.py chart
+
+  # Ostatnie 24 godziny
+  python soc.py chart --hours 24
+
+  # Konkretny zakres dat
+  python soc.py chart --from 2024-06-01 --to 2024-06-07
+
+  # Inny plik wyjściowy
+  python soc.py chart --output raporty/tydzien.png
+
+  # Inny plik wejściowy + zakres
+  python soc.py chart --input sample_logs/duzy.json --from 2024-06-01 --output czerwiec.png
+
+  # Bezpośrednio przez visualizer.py (bez CLI)
+  python visualizer.py
+  python visualizer.py --input sample_logs/duzy.json --output duzy_dashboard.png
+  python visualizer.py --from 2024-06-01 --to 2024-06-03 --output 3dni.png
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PEŁNA ANALIZA (WSZYSTKO NARAZ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Uruchamia analyze + brute + chart jedną komendą
+  python soc.py full
+
+  # Ostatnie 48 godzin
+  python soc.py full --hours 48
+
+  # Konkretny zakres dat + eksport CSV
+  python soc.py full --from 2024-06-01 --to 2024-06-07 --csv
+
+  # Inny plik wejściowy i wyjściowy dashboard
+  python soc.py full --input sample_logs/duzy.json --chart-output raport_koncowy.png --csv
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GIT — STANDARDOWY WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Pierwsze uruchomienie (raz)
+  git init
+  git remote add origin https://github.com/FiFulini/SOC-Home-Lab-Log-Analyzer-Threat-Hunter.git
+
+  # Dodaj plik .gitignore żeby nie wrzucać danych i venv
+  echo "sample_logs/\n*.csv\n__pycache__/\nvenv/\n*.png" > .gitignore
+
+  # Standardowy commit
+  git add .
+  git commit -m "feat: opis zmiany"
+  git push
+
+  # Przykładowe dobre commit messages dla etapu 1:
+  git commit -m "feat: initial log parser and CSV reporter"
+  git commit -m "feat: add brute-force detector with sliding window"
+  git commit -m "feat: add matplotlib dashboard with 4 charts"
+  git commit -m "feat: add CLI interface with argparse (soc.py)"
+  git commit -m "docs: complete etap1 README and file descriptions"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ POMOC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  python soc.py --help
+  python soc.py generate --help
+  python soc.py analyze --help
+  python soc.py brute --help
+  python soc.py chart --help
+  python soc.py full --help
+
