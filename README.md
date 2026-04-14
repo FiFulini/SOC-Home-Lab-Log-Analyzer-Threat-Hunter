@@ -1,9 +1,11 @@
-# SOC Home Lab
+# SOC Home Lab — Log Analyzer & Threat Hunter
 
 Projekt edukacyjny do nauki cyberbezpieczeństwa zbudowany na bazie Wazuh SIEM.
 Każdy etap to niezależny moduł — razem tworzą mini-platformę SOC-analityczną.
 
-Projekt powstał jako ćwiczenie praktyczne po pracy inżynierskiej z optymalizacji SIEM (Wazuh + Security Onion). Celem jest przełożenie umiejętności z analizy danych na realne narzędzia bezpieczeństwa.
+Projekt powstał jako ćwiczenie praktyczne po pracy inżynierskiej z optymalizacji
+SIEM (Wazuh + Security Onion). Celem jest przełożenie umiejętności z analizy danych
+na realne narzędzia bezpieczeństwa.
 
 ---
 
@@ -18,11 +20,47 @@ Projekt powstał jako ćwiczenie praktyczne po pracy inżynierskiej z optymaliza
 
 ---
 
+## Struktura projektu
+
+```
+soc-home-lab/
+├── README.md
+├── requirements.txt
+├── TODO.md                        ← sprzęt, zakupy, konfiguracja RPi
+├── KOMENDY.txt                    ← wszystkie komendy Etapu 1
+├── KOMENDY_ETAP2.txt              ← wszystkie komendy Etapu 2
+├── OPIS_PLIKOW.md                 ← szczegółowy opis każdego pliku Etapu 1
+├── soc_dashboard.png              ← screenshot dashboardu
+├── soc_viewer.html                ← wygenerowany panel filtrów (przykład)
+│
+├── etap1_log_analyzer/
+│   ├── soc.py                     ← główny CLI: generate / analyze / brute / chart / full
+│   ├── generate_sample_logs.py    ← generator logów z realistycznymi scenariuszami ataków
+│   ├── brute_force_detector.py    ← detekcja brute-force, password spraying, distributed
+│   ├── visualizer.py              ← dashboard PNG (4 wykresy matplotlib)
+│   ├── viewer_html.py             ← interaktywny panel filtrów w przeglądarce
+│   ├── viewer.py                  ← panel filtrów w Streamlit (zalążek Etapu 4)
+│   ├── parser.py                  ← wczytywanie i parsowanie logów JSON
+│   ├── rules.py                   ← filtrowanie alertów po poziomie i grupie
+│   ├── reporter.py                ← eksport wyników do CSV
+│   ├── main.py                    ← standalone analiza bez CLI
+│   └── sample_logs/               ← dane testowe (nie w git)
+│
+└── etap2_wazuh_api/
+    ├── soc2.py                    ← CLI: poll / status / query / agents
+    ├── mock_wazuh_server.py       ← symuluje Wazuh REST API v4.x (testy lokalne)
+    ├── wazuh_client.py            ← klient HTTP z auto-refresh tokenu JWT
+    ├── alert_store.py             ← lokalna baza SQLite z deduplikacją po ID
+    └── poller.py                  ← pętla zbierająca alerty co X sekund
+```
+
+---
+
 ## Etap 1 — Analizator logów ✓
 
 Parser i analizator logów Wazuh w Pythonie. Wykrywa ataki brute-force trzema
-algorytmami korelacji zdarzeń i generuje dashboard wizualny. Działa w całości
-lokalnie — nie potrzeba żadnego serwera.
+algorytmami korelacji zdarzeń, generuje dashboard wizualny i interaktywny
+panel filtrów w przeglądarce. Działa w całości lokalnie — nie potrzeba serwera.
 
 ![SOC Dashboard](soc_dashboard.png)
 
@@ -58,7 +96,17 @@ python soc.py full --csv
 Pełna lista komend: [KOMENDY.txt](KOMENDY.txt)
 Opis każdego pliku: [OPIS_PLIKOW.md](OPIS_PLIKOW.md)
 
-### Przykładowy wynik
+### Filtry dat
+
+Wszystkie komendy obsługują filtry czasowe:
+
+```bash
+python soc.py analyze --hours 24
+python soc.py analyze --from 2024-06-01 --to 2024-06-07
+python soc.py generate --from "2024-06-01 08:00" --to "2024-06-01 20:00"
+```
+
+### Przykładowy wynik `soc.py analyze`
 
 ```
 ────────────────────────────────────────────────────────────────────────
@@ -75,42 +123,9 @@ Opis każdego pliku: [OPIS_PLIKOW.md](OPIS_PLIKOW.md)
  Top atakujące IP:
 
   ██████████████   116x  91.108.4.200
-  ████████    49x  198.51.100.22
 
 [!!!] KRYTYCZNY | 2024-06-03 02:14 | Brute-force SSH
       agent=linux-server-01  ip=91.108.4.200  prób=34  ← UDANE LOGOWANIE!
-```
-
-### Filtry dat
-
-Wszystkie komendy obsługują filtry czasowe:
-
-```bash
-# Ostatnie N godzin
-python soc.py analyze --hours 24
-python soc.py chart   --hours 48
-
-# Konkretny zakres dat
-python soc.py analyze --from 2024-06-01 --to 2024-06-07
-python soc.py chart   --from "2024-06-01 08:00" --to "2024-06-01 20:00"
-
-# Generator z konkretnym zakresem
-python soc.py generate --from 2024-06-01 --to 2024-06-07 --count 2000
-```
-
-### Struktura plików
-
-```
-etap1_log_analyzer/
-├── soc.py                     ← główny punkt wejścia CLI
-├── generate_sample_logs.py    ← generator realistycznych logów testowych
-├── brute_force_detector.py    ← detekcja brute-force, spraying, distributed
-├── visualizer.py              ← dashboard PNG (4 wykresy matplotlib)
-├── parser.py                  ← wczytywanie i parsowanie logów JSON
-├── rules.py                   ← filtrowanie alertów po poziomie i grupie
-├── reporter.py                ← eksport wyników do CSV
-├── main.py                    ← standalone analiza bez CLI
-└── sample_logs/               ← dane testowe (nie w git)
 ```
 
 ### Algorytmy detekcji
@@ -125,14 +140,30 @@ Splunk, Elastic SIEM i reguły Sigma:
 - **Distributed attack** — okno 300s, ≥3 różne IP atakują tego samego użytkownika.
   Wykrywa skoordynowane ataki botnetowe gdzie każde IP wygląda niewinnie z osobna.
 
-### Dashboard
+### Generator logów z FIM (syscheck)
 
-| Wykres | Co pokazuje |
-|---|---|
-| Timeline alertów | Każdy alert jako kropka na osi czasu — skupienia = ataki |
-| Heatmapa godzinowa | O której godzinie jest szczyt ataków |
-| Top 10 reguł | Które reguły Wazuha wyzwalają się najczęściej |
-| Top atakujące IP | Kandydaci do blokady przez iptables |
+Generator produkuje cztery realistyczne scenariusze ataków, w tym alerty
+File Integrity Monitor z pełnym polem `syscheck`:
+
+```json
+{
+  "syscheck": {
+    "path": "/tmp/backdoor.sh",
+    "event": "added",
+    "size_after": "2048",
+    "perm_after": "rwxrwxrwx",
+    "uname_after": "root",
+    "md5_after": "d41d8cd98f00b204e9800998ecf8427e",
+    "sha1_after": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+    "sha256_after": "e3b0c44298fc1c149afbf4c8996fb924..."
+  }
+}
+```
+
+Dla zmodyfikowanych plików generator dołącza diff (MD5/SHA1/SHA256 przed i po,
+rozmiar przed i po, uprawnienia przed i po, timestamp modyfikacji).
+Identyczna struktura jak prawdziwy Wazuh FIM — kod działa bez zmian po
+podłączeniu RPi.
 
 ### Powiązania MITRE ATT&CK
 
@@ -144,13 +175,87 @@ Splunk, Elastic SIEM i reguły Sigma:
 | Privilege escalation sudo | T1548.003 — Sudo Caching |
 | File integrity violation | T1565 — Data Manipulation |
 
+### Dashboard
+
+Cztery wykresy w jednym pliku PNG:
+
+| Wykres | Co pokazuje |
+|---|---|
+| Timeline alertów | Każdy alert jako kropka na osi czasu — skupienia = ataki |
+| Heatmapa godzinowa | O której godzinie jest szczyt ataków |
+| Top 10 reguł | Które reguły Wazuha wyzwalają się najczęściej |
+| Top atakujące IP | Kandydaci do blokady przez iptables |
+
+---
+
+## Viewer — interaktywny panel filtrów
+
+Dwa sposoby przeglądania dużych zbiorów alertów w przeglądarce.
+Oba obsługują Etap 1 (pliki JSON) i Etap 2 (baza SQLite).
+
+### `viewer_html.py` — zero zależności (zalecane)
+
+Generuje jeden plik `.html` który otwierasz w przeglądarce. Filtrowanie
+i paginacja działają w JavaScript — nie potrzeba serwera, działa offline.
+
+```bash
+# Z pliku JSON (Etap 1)
+python viewer_html.py --input sample_logs/wazuh_alerts.json --open
+
+# Z bazy SQLite (Etap 2)
+python viewer_html.py --db etap2_wazuh_api/alerts.db --open
+
+# Zapisz raport HTML do przekazania dalej
+python viewer_html.py --db alerts.db --output raport_tygodniowy.html
+```
+
+Funkcje panelu:
+
+| Funkcja | Opis |
+|---|---|
+| Suwak poziomu (1–15) | Filtruj po severity Wazuha |
+| Zakres dat | Od / Do z date pickerem |
+| IP atakującego | Multiselect — Ctrl żeby zaznaczyć wiele |
+| Agent / host | Multiselect po nazwie hosta |
+| ID reguły | Multiselect po numerze reguły Wazuha |
+| Szukaj w opisie | Filtr tekstowy (brute, injection, sudo, /tmp...) |
+| Tylko FIM | Checkbox — tylko alerty z polem syscheck |
+| Paginacja | 20 / 50 / 100 / 500 alertów na stronę |
+| Sortowanie | Kliknij nagłówek kolumny — ↕ zmienia kierunek |
+| Panel szczegółów | Kliknij wiersz → pełne dane alertu z boku ekranu |
+| Eksport CSV | Pobiera tylko przefiltrowane wiersze |
+
+**Panel szczegółów alertu** — kliknięcie w dowolny wiersz wysuwa panel
+z prawej strony z pełnymi informacjami. Dla alertów FIM pokazuje:
+
+- dla `event: modified` — diff pliku (rozmiar przed/po, MD5 przed/po,
+  uprawnienia przed/po, właściciel przed/po, timestamp modyfikacji)
+- dla `event: added` — rozmiar, uprawnienia, właściciel, checksums (MD5,
+  SHA1, SHA256), numer inode
+- dla wszystkich alertów — surowy JSON na dole panelu
+
+### `viewer.py` — Streamlit (zalążek Etapu 4)
+
+Wersja z auto-odświeżaniem co 15 sekund — przydatna gdy poller zbiera
+alerty na żywo.
+
+```bash
+pip install streamlit pandas
+streamlit run viewer.py
+# → otwiera http://localhost:8501 automatycznie
+```
+
+Dodatkowe funkcje: zakładka Statystyki z interaktywnymi wykresami
+(top reguły, top IP, rozkład poziomów, top agenci), zakładka Timeline
+z liczbą alertów per godzina i aktywność wg godziny doby.
+
 ---
 
 ## Etap 2 — Wazuh API + SQLite ✓
 
 Klient REST API dla Wazuh Managera z lokalną bazą SQLite i automatycznym
-pollerem. Etap 2 można testować w całości lokalnie bez żadnego serwera —
-mock serwer symuluje pełne API Wazuha v4.x.
+pollerem. Testowany w całości lokalnie — mock serwer symuluje pełne API
+Wazuha v4.x bez fizycznego serwera.
 
 ### Szybki start (dwa terminale)
 
@@ -161,7 +266,7 @@ cd etap2_wazuh_api
 python mock_wazuh_server.py
 ```
 
-**Terminal 2 — zbieranie alertów:**
+**Terminal 2 — zbieranie i analiza:**
 
 ```bash
 # Zbieraj alerty co 5 sekund
@@ -182,21 +287,18 @@ python soc2.py query --agent linux-server-01
 python soc2.py agents
 ```
 
-Pełna lista komend: [KOMENDY_ETAP2.txt](etap2_wazuh_api/KOMENDY_ETAP2.txt)
+Pełna lista komend: [KOMENDY_ETAP2.txt](KOMENDY_ETAP2.txt)
 
 ### Połączenie Etapu 1 i 2
 
 Dane zebrane przez poller można analizować narzędziami z Etapu 1:
 
 ```bash
-# Eksportuj zebrane alerty do JSON
 python soc2.py query --level 0 --format json --limit 9999 > zebrane.json
-
-# Analizuj narzędziami z Etapu 1
 cd ../etap1_log_analyzer
 python soc.py analyze --input ../etap2_wazuh_api/zebrane.json
 python soc.py brute   --input ../etap2_wazuh_api/zebrane.json
-python soc.py chart   --input ../etap2_wazuh_api/zebrane.json --output dashboard_live.png
+python soc.py chart   --input ../etap2_wazuh_api/zebrane.json
 ```
 
 ### Przejście na prawdziwy Wazuh
@@ -207,7 +309,7 @@ Gdy masz serwer z Wazuhem — jedna zmiana w komendzie:
 # Mock (testowanie lokalne)
 python soc2.py poll --host 127.0.0.1
 
-# Prawdziwy Wazuh Manager
+# Prawdziwy Wazuh Manager (RPi lub VM)
 python soc2.py poll --host 192.168.1.50 --password TWOJE_HASLO
 python soc2.py agents --host 192.168.1.50
 python soc2.py status --host 192.168.1.50
@@ -215,33 +317,40 @@ python soc2.py status --host 192.168.1.50
 
 Cały kod — klient, baza, poller, CLI — zostaje bez zmian.
 
-### Struktura plików
-
-```
-etap2_wazuh_api/
-├── soc2.py                ← CLI: poll / status / query / agents
-├── mock_wazuh_server.py   ← symuluje Wazuh REST API v4.x (do testów lokalnych)
-├── wazuh_client.py        ← klient HTTP z auto-refresh tokenu JWT
-├── alert_store.py         ← lokalna baza SQLite z deduplikacją po ID
-└── poller.py              ← pętla zbierająca alerty co X sekund
-```
-
 ### Architektura
 
 ```
 [Mock serwer / RPi z Wazuhem]
         │  REST API (JWT)
         ▼
-  wazuh_client.py          ← autentykacja, GET /alerts, GET /agents
+  wazuh_client.py     ← autentykacja, GET /alerts, GET /agents
         │
         ▼
-  alert_store.py           ← SQLite, INSERT OR IGNORE (deduplikacja)
+  alert_store.py      ← SQLite, INSERT OR IGNORE (deduplikacja po ID)
         │
         ▼
-  soc2.py query            ← filtrowanie po dacie, IP, agencie, poziomie
+  soc2.py query       ← filtrowanie po dacie, IP, agencie, poziomie
         │
         ▼
-  soc.py analyze/chart     ← analiza i wizualizacja z Etapu 1
+  soc.py / viewer     ← analiza i wizualizacja z Etapu 1
+```
+
+---
+
+## Wymagania
+
+```
+pandas>=2.0.0
+matplotlib>=3.8.0
+python-dateutil>=2.8.2
+requests>=2.31.0        # przygotowane pod Etap 3
+
+# Etap 2 nie wymaga dodatkowych bibliotek
+# (używa tylko stdlib: urllib, sqlite3, json, http.server)
+```
+
+```bash
+pip install -r requirements.txt
 ```
 
 ---
@@ -255,80 +364,20 @@ etap2_wazuh_api/
 | Analiza | pandas, matplotlib |
 | Baza danych | SQLite (wbudowana w Python) |
 | Detekcja | sliding window (własna implementacja) |
-| API client | urllib (wbudowana w Python, bez requests) |
+| API client | urllib (stdlib, bez dodatkowych zależności) |
+| Viewer | HTML + JavaScript / Streamlit |
+| Sprzęt (Etap 2+) | Raspberry Pi 5 8GB + Ubuntu 22.04 |
 
 ---
 
-## Wymagania
+## Przydatne linki
 
-```
-pandas>=2.0.0
-matplotlib>=3.8.0
-python-dateutil>=2.8.2
-requests>=2.31.0        # przygotowane pod Etap 3
-
-# Etap 2 nie wymaga dodatkowych bibliotek — używa tylko stdlib Pythona
-# (urllib, sqlite3, json, http.server)
-```
-
-```bash
-pip install -r requirements.txt
-```
-
+- [Dokumentacja Wazuh](https://documentation.wazuh.com)
+- [Wazuh ruleset — lista reguł](https://github.com/wazuh/wazuh-ruleset)
+- [MITRE ATT&CK](https://attack.mitre.org)
+- [AbuseIPDB API](https://www.abuseipdb.com/api) — darmowy do 1000 req/dzień
+- [AlienVault OTX](https://otx.alienvault.com) — darmowe threat feeds
 
 ---
 
-## Viewer — interaktywny panel filtrów
-
-Dwa sposoby przeglądania dużych zbiorów alertów z panelem filtrów w przeglądarce.
-Oba obsługują Etap 1 (pliki JSON) i Etap 2 (baza SQLite).
-
-### `viewer_html.py` — zero zależności (zalecane)
-
-Generuje jeden plik `.html` który otwierasz w przeglądarce. Wszystkie dane
-i filtry działają w JavaScript — nie potrzeba serwera, działa offline.
-
-```bash
-# Z pliku JSON (Etap 1)
-python viewer_html.py --input etap1_log_analyzer/sample_logs/wazuh_alerts.json --open
-
-# Z bazy SQLite (Etap 2)
-python viewer_html.py --db etap2_wazuh_api/alerts.db --open
-
-# Zapisz raport HTML do przekazania dalej
-python viewer_html.py --db alerts.db --output raport_tygodniowy.html
-```
-
-Co masz w panelu:
-
-| Funkcja | Opis |
-|---|---|
-| Suwak poziomu (1–15) | Filtruj po severity Wazuha |
-| Zakres dat | Od / Do z date pickerem |
-| IP atakującego | Multiselect — Ctrl żeby zaznaczyć wiele |
-| Agent / host | Multiselect po nazwie hosta |
-| ID reguły | Multiselect po numerze reguły Wazuha |
-| Szukaj w opisie | Filtr tekstowy (brute, injection, sudo...) |
-| Paginacja | 20 / 50 / 100 / 500 alertów na stronę |
-| Sortowanie | Kliknij nagłówek kolumny — ↕ zmienia kierunek |
-| Eksport CSV | Pobiera tylko przefiltrowane wiersze |
-
-Paginacja rozwiązuje problem wolnego ładowania przy dużych zbiorach — przeglądarka
-renderuje maksymalnie 500 wierszy naraz zamiast 11 000.
-
-### `viewer.py` — Streamlit (zalążek Etapu 4)
-
-Wersja z auto-odświeżaniem co 15 sekund — przydatna gdy poller zbiera alerty
-na żywo i chcesz widzieć nowe zdarzenia bez ręcznego odświeżania.
-
-```bash
-pip install streamlit pandas
-streamlit run viewer.py
-# → otwiera http://localhost:8501 automatycznie
-```
-
-Dodatkowe funkcje względem wersji HTML: zakładka Statystyki z wykresami
-interaktywnymi (top reguły, top IP, rozkład poziomów, top agenci), zakładka
-Timeline z liczbą alertów per godzina i aktywność wg godziny doby,
-auto-odświeżanie bazy SQLite podczas działającego pollera.
-
+*Projekt edukacyjny — cybersecurity home lab*
