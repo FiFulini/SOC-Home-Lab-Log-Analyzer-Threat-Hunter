@@ -138,8 +138,8 @@ python soc2.py status --host 192.168.1.50
 
 ## Git
 
-- [ ] Dodać `*.db` i `alerts.db` do `.gitignore` (bazy danych nie commitujemy)
-- [ ] Dodać `sample_logs/` do `.gitignore` (dane testowe nie należą do repo)
+- [x] Dodać `*.db` i `alerts.db` do `.gitignore` (bazy danych nie commitujemy)
+- [x] Dodać `sample_logs/` do `.gitignore` (dane testowe nie należą do repo)
 - [ ] Sprawdzić że `requirements.txt` jest aktualny po każdym nowym `pip install`
 
 ```bash
